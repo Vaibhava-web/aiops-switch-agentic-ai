@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Observability</title>
+  <style>
+    :root {
+      --bg: #0a1530;
+      --bg-soft: #122243;
+      --bg-card: #1e2f4f;
+      --border: #2f4469;
+      --text: #e2e8f0;
+      --muted: #a7b8d4;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --danger: #f87171;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(160deg, #09142b 0%, #0b1d3d 55%, #0a1630 100%);
+      color: var(--text);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 20px;
+      background: #162543;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+    }
+
+    .tab {
+      cursor: pointer;
+      color: var(--text);
+      opacity: 0.75;
+      user-select: none;
+    }
+
+    .tab.active {
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .panel {
+      display: none;
+      padding: 14px;
+    }
+
+    .panel.show {
+      display: block;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 6px 8px 12px;
+    }
+
+    .toggle-btn {
+      border: 1px solid var(--border);
+      background: #1a2a4a;
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .toggle-btn.off {
+      opacity: 0.55;
+      background: #16223d;
+    }
+
+    .card {
+      background: var(--bg-card);
+      padding: 14px;
+      margin: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+
+    .metric-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      font-size: 16px;
+    }
+
+    .metric-row > div {
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1px solid #2c4164;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+    }
+
+    .status-up {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .alert-item {
+      background: #1a2744;
+      border: 1px solid #35507d;
+      border-left: 4px solid #5177b8;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .alert-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .alert-sev {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      letter-spacing: 0.03em;
+    }
+
+    .sev-critical {
+      color: #ffb4b4;
+      background: #3a1c1c;
+      border-color: #6a2f2f;
+    }
+
+    .sev-major {
+      color: #ffd6a5;
+      background: #382615;
+      border-color: #6d4722;
+    }
+
+    .sev-minor {
+      color: #fde68a;
+      background: #3a3218;
+      border-color: #67582a;
+    }
+
+    .sev-info {
+      color: #bfdbfe;
+      background: #192b44;
+      border-color: #2f4b73;
+    }
+
+    .alert-tag {
+      font-size: 11px;
+      color: #b8c8e6;
+      background: #172742;
+      border: 1px solid #345079;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .alert-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #e8efff;
+    }
+
+    .alert-meta {
+      color: #a9bbda;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .alert-rec {
+      color: #d6e3ff;
+      font-size: 12px;
+    }
+
+    .log {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #0d1b35;
+      border: 1px solid #2a3f62;
+      padding: 10px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .ml-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .ml-metric {
+      background: #102c21;
+      border: 1px solid #2d6044;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .ml-label {
+      color: #97d5b6;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .ml-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+      .metric-row {
+        font-size: 15px;
+      }
+
+      th, td {
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="tabs" id="tabs_bar">
+  <div class="tab active" data-target="telemetry">TELEMETRY</div>
+  <div class="tab" data-target="ml">ML</div>
+</div>
+
+<div style="padding:10px 14px; background:#122243; border-bottom:1px solid #2f4469;">
+  <label style="margin-right:10px; font-weight:700; color:#a7b8d4;">Device:</label>
+  <select id="deviceSelect" style="background:#1e2f4f; color:#e2e8f0; border:1px solid #2f4469; border-radius:6px; padding:4px 10px; font-size:13px;"></select>
+</div>
+
+<div id="telemetry" class="panel show">
+  <div id="box_toggles" class="toolbar"></div>
+
+  <div id="box_sys" class="card">
+    <h3>System Metrics</h3>
+    <div class="metric-row">
+      <div>CPU: <span id="cpu">-</span>%</div>
+      <div>MEM: <span id="mem">-</span>%</div>
+      <div>FLASH: <span id="flash">-</span>%</div>
+    </div>
+  </div>
+
+  <div id="box_env" class="card">
+    <h3>Env Metrics</h3>
+    <div class="metric-row">
+      <div>Temp: <span id="env_temp">-</span></div>
+      <div>Fan: <span id="env_fan">-</span></div>
+    </div>
+  </div>
+
+  <div id="box_ports" class="card">
+    <h3>Ports (Live)</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Port</th>
+            <th>Status</th>
+            <th>Util</th>
+            <th>In Mbps</th>
+            <th>Out Mbps</th>
+            <th>In Pps</th>
+            <th>Out Pps</th>
+            <th>In Bcast</th>
+            <th>Out Bcast</th>
+            <th>Reset</th>
+            <th>Burst</th>
+            <th>Mac Count</th>
+            <th>Saturated</th>
+            <th>Errors</th>
+            <th>Discards</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody id="ports_body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="box_alerts" class="card">
+    <h3>Live Alerts</h3>
+    <div id="alerts_list"></div>
+  </div>
+
+  <div id="box_stream" class="card">
+    <h3>Live Stream</h3>
+    <div id="telemetry_log" class="log"></div>
+  </div>
+</div>
+
+<div id="ml" class="panel">
+  <div class="card">
+    <h3>ML Scores (Live)</h3>
+    <div class="ml-grid">
+      <div class="ml-metric">
+        <div class="ml-label">Score</div>
+        <div class="ml-value" id="ml_score">-</div>
+      </div>
+      <div class="ml-metric">
+        <div class="ml-label">System</div>
+        <div class="ml-value" id="ml_sys">-</div>
+      </div>
+      <div class="ml-metric">
+        <div class="ml-label">Traffic</div>
+        <div class="ml-value" id="ml_traf">-</div>
+      </div>
+      <div class="ml-metric">
+        <div class="ml-label">Env</div>
+        <div class="ml-value" id="ml_env">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Heap Memory (Processes)</h3>
+    <div class="card">
+      <h3>Heap Alerts</h3>
+      <div id="heap_alerts_list"></div>
+    </div>
+    <div style="overflow-x:auto; max-height:300px; overflow-y:auto;">
+      <table id="heapTable">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Process</th>
+            <th>PID</th>
+            <th>Heap (kB)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+  
+</div>
+
+<script>
+  const telemetryLogLimit = 200;
+  const alertsLimit = 10;
+  const tabs = ["telemetry", "ml"];
+
+  let deviceStates = {};
+  let selectedDevice = "NANDI";
+  let mlStates = {};
+
+  let telemetryLog = [];
+  let alerts = [];
+  let heapData = [];
+  let lastSeenHeap = {};
+  let isInitialLoad = true;
+
+  const visibleBoxes = {
+    sys: true,
+    env: false,
+    ports: true,
+    alerts: true,
+    stream: false
+  };
+
+  const boxToElement = {
+    sys: "box_sys",
+    env: "box_env",
+    ports: "box_ports",
+    alerts: "box_alerts",
+    stream: "box_stream"
+  };
+
+  const boxLabels = {
+    sys: "SYS",
+    env: "ENV",
+    ports: "PORTS",
+    alerts: "ALERTS",
+    stream: "STREAM"
+  };
+
+  function showTab(name) {
+    if (!tabs.includes(name)) return;
+
+    document.querySelectorAll(".panel").forEach(panel => {
+      panel.classList.toggle("show", panel.id === name);
+    });
+
+    document.querySelectorAll("#tabs_bar .tab").forEach(tab => {
+      tab.classList.toggle("active", tab.dataset.target === name);
+    });
+  }
+
+  function renderToggleButtons() {
+    const root = document.getElementById("box_toggles");
+    root.innerHTML = "";
+
+    Object.keys(visibleBoxes).forEach((key) => {
+      const btn = document.createElement("button");
+      btn.className = "toggle-btn" + (visibleBoxes[key] ? "" : " off");
+      btn.textContent = boxLabels[key] || key.toUpperCase();
+      btn.onclick = () => {
+        visibleBoxes[key] = !visibleBoxes[key];
+        renderToggleButtons();
+        renderVisibleBoxes();
+      };
+      root.appendChild(btn);
+    });
+  }
+
+  function renderVisibleBoxes() {
+    Object.entries(boxToElement).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = visibleBoxes[key] ? "block" : "none";
+    });
+  }
+
+  function updateDeviceSelector() {
+    const select = document.getElementById("deviceSelect");
+    if (!select) return;
+    const devices = Object.keys(deviceStates);
+    select.innerHTML = devices.map(d => `<option value="${d}">${d}</option>`).join("");
+    if (!devices.includes(selectedDevice)) {
+      selectedDevice = devices[0] || "NANDI";
+    }
+    select.value = selectedDevice;
+  }
+
+  function mergeTelemetry(data) {
+    const device = data.device || data.device_id || "UNKNOWN";
+    if (!deviceStates[device]) {
+      deviceStates[device] = {};
+    }
+    const prev = deviceStates[device];
+    deviceStates[device] = {
+      ...prev,
+      ...data,
+      sys: data.sys || prev.sys,
+      env: data.env || prev.env,
+      enabled_metrics: data.enabled_metrics || prev.enabled_metrics,
+      ports: Object.prototype.hasOwnProperty.call(data, "ports") ? (data.ports || {}) : (prev.ports || {})
+    };
+    updateDeviceSelector();
+  }
+
+  function formatNum(value, digits = 2) {
+    if (typeof value !== "number" || Number.isNaN(value)) return "-";
+    return value.toFixed(digits);
+  }
+
+  function formatIstTime(tsMs) {
+    const d = new Date(tsMs);
+    return d.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour12: false
+    });
+  }
+
+  function normalizeAlertMessageTimeToIst(message, displayTimeIst) {
+    if (typeof message !== "string" || !message) return message;
+    if (typeof displayTimeIst !== "string" || !displayTimeIst || displayTimeIst === "Live") return message;
+
+    // Replace message-local clock token with the same IST value shown in alert meta.
+    return message.replace(/\[ALERT\s+\d{2}:\d{2}:\d{2}\]/g, `[ALERT ${displayTimeIst}]`);
+  }
+
+  function formatIstDateTime(tsMs) {
+    const d = new Date(tsMs);
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }).formatToParts(d);
+
+    const byType = {};
+    parts.forEach(p => {
+      byType[p.type] = p.value;
+    });
+
+    return `${byType.year}-${byType.month}-${byType.day} ${byType.hour}:${byType.minute}:${byType.second}`;
+  }
+
+  function parseHeapTimestampEpoch(row) {
+    const rawEpoch = Number(row.timestamp_epoch);
+    if (Number.isFinite(rawEpoch) && rawEpoch > 946684800 && rawEpoch < 4102444800) {
+      return rawEpoch;
+    }
+
+    const rawTs = typeof row.timestamp === "string" ? row.timestamp.trim() : "";
+    const m = rawTs.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/);
+    if (!m) return null;
+
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    const h = Number(m[4]);
+    const mi = Number(m[5]);
+    const s = Number(m[6]);
+
+    // Input timestamp is IST, convert to UTC epoch.
+    const utcMs = Date.UTC(y, mo - 1, d, h, mi, s) - (5 * 60 + 30) * 60 * 1000;
+    const epoch = Math.floor(utcMs / 1000);
+    if (Number.isFinite(epoch) && epoch > 946684800 && epoch < 4102444800) {
+      return epoch;
+    }
+
+    return null;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderSystemAndEnv() {
+    const state = deviceStates[selectedDevice] || {};
+    const sys = state.sys || {};
+    const env = state.env || {};
+
+    document.getElementById("cpu").textContent = sys.cpu ?? "-";
+    document.getElementById("mem").textContent = sys.mem ?? "-";
+    document.getElementById("flash").textContent = sys.flash ?? "-";
+    document.getElementById("env_temp").textContent = env.temp ?? "-";
+    document.getElementById("env_fan").textContent = env.fan_rpms ?? "-";
+  }
+
+  function renderPorts() {
+    const body = document.getElementById("ports_body");
+    const state = deviceStates[selectedDevice] || {};
+    const trafficEnabled = state.enabled_metrics
+      ? state.enabled_metrics.traffic !== false
+      : true;
+
+    if (!trafficEnabled) {
+      body.innerHTML = "<tr><td colspan=\"16\">Traffic is turned off.</td></tr>";
+      return;
+    }
+
+    const ports = Object.entries(state.ports || {})
+      .filter(([, v]) => v && v.oper === "up");
+
+    if (ports.length === 0) {
+      body.innerHTML = "<tr><td colspan=\"16\">No active UP ports.</td></tr>";
+      return;
+    }
+
+    body.innerHTML = ports.map(([port, value]) => {
+      const util = typeof value.util === "number" ? value.util : value.utilization;
+      const inB = typeof value.in_b === "number" ? value.in_b / 1e6 : null;
+      const outB = typeof value.out_b === "number" ? value.out_b / 1e6 : null;
+      const inPps = value.in_p ?? value.in_pps ?? value.in_pkt_rate;
+      const outPps = value.out_p ?? value.out_pps ?? value.out_pkt_rate;
+      const inBcast = value.in_bc ?? value.in_bcast ?? value.in_bc_ratio;
+      const outBcast = value.out_bc ?? value.out_bcast ?? value.out_bc_ratio;
+      const reset = value.reset;
+      const burst = value.burst;
+      const macCount = value.mac_count;
+      const saturated = value.is_saturated ?? value.saturated;
+
+      return [
+        "<tr>",
+        "<td>" + escapeHtml(port) + "</td>",
+        "<td class=\"status-up\">UP</td>",
+        "<td>" + formatNum(util) + "</td>",
+        "<td>" + formatNum(inB) + "</td>",
+        "<td>" + formatNum(outB) + "</td>",
+        "<td>" + escapeHtml(inPps ?? "-") + "</td>",
+        "<td>" + escapeHtml(outPps ?? "-") + "</td>",
+        "<td>" + escapeHtml(inBcast ?? "-") + "</td>",
+        "<td>" + escapeHtml(outBcast ?? "-") + "</td>",
+        "<td>" + escapeHtml(reset ?? "-") + "</td>",
+        "<td>" + escapeHtml(burst ?? "-") + "</td>",
+        "<td>" + escapeHtml(macCount ?? "-") + "</td>",
+        "<td>" + escapeHtml(saturated ?? "-") + "</td>",
+        "<td>" + escapeHtml(value.in_err_rate ?? "-") + "</td>",
+        "<td>" + escapeHtml(value.discard_rate ?? "-") + "</td>",
+        "<td>" + escapeHtml(value.role ?? "-") + "</td>",
+        "</tr>"
+      ].join("");
+    }).join("");
+  }
+
+  function renderTelemetryLog() {
+    const root = document.getElementById("telemetry_log");
+    root.textContent = telemetryLog.map(item => JSON.stringify(item)).join("\n");
+  }
+
+  function renderAlerts() {
+    const root = document.getElementById("alerts_list");
+    if (alerts.length === 0) {
+      root.innerHTML = "<div style=\"opacity:0.75;\">No live alerts.</div>";
+      return;
+    }
+
+    const normalAlerts = alerts.filter(a => {
+      const dev = a.ev.device || a.ev.device_id || "UNKNOWN";
+      return !a.ev.is_heap_alert && (selectedDevice === "ALL" || dev === selectedDevice);
+    });
+
+    root.innerHTML = normalAlerts.map(({ ev }) => {
+      const sev = String(ev.severity || "INFO").toUpperCase();
+      const sevClass = sev === "CRITICAL" ? "sev-critical" : sev === "MAJOR" ? "sev-major" : sev === "MINOR" ? "sev-minor" : "sev-info";
+      
+      const device = escapeHtml(ev.device || ev.device_id || "UNKNOWN");
+      const ts = escapeHtml(ev.display_time_ist || "Live");
+      const messageText = normalizeAlertMessageTimeToIst(ev.message, ev.display_time_ist);
+
+      // Check if we have the new "message" string from brain.py
+      if (ev.message) {
+        return [
+          "<div class=\"alert-item\">",
+            "<div class=\"alert-head\">",
+              "<span class=\"alert-sev ", sevClass, "\">", sev, "</span>",
+              "<span class=\"alert-meta\">Device: ", device, " | ", ts, "</span>",
+            "</div>",
+            "<pre style=\"white-space:pre-wrap; background:#0a1529; padding:8px; border-radius:4px; font-family:monospace; color:#e2e8f0; border:1px solid #1e2f4f;\">",
+              escapeHtml(messageText),
+            "</pre>",
+          "</div>"
+        ].join("");
+      }
+
+      // Fallback for old structured alerts
+      const title = escapeHtml(ev.title || ev.root_cause_detail || ev.root_cause || "Anomaly detected");
+      return [
+        "<div class=\"alert-item\">",
+          "<div class=\"alert-head\">",
+            "<span class=\"alert-sev ", sevClass, "\">", sev, "</span>",
+          "</div>",
+          "<div class=\"alert-title\">", title, "</div>",
+          "<div class=\"alert-meta\">device: ", device, "</div>",
+        "</div>"
+      ].join("");
+    }).join("");
+  }
+
+  function renderHeapAlerts() {
+    const root = document.getElementById("heap_alerts_list");
+    if (!root) return;
+
+    const heapAlerts = alerts.filter(a =>
+      a.ev.is_heap_alert &&
+      (selectedDevice === "ALL" || (a.ev.device || a.ev.device_id || "UNKNOWN") === selectedDevice)
+    );
+
+    if (heapAlerts.length === 0) {
+      root.innerHTML = "<div style='opacity:0.7;'>No heap alerts.</div>";
+      return;
+    }
+
+    root.innerHTML = heapAlerts.map(({ ev }) => {
+      const sev = (ev.severity || "CRITICAL").toUpperCase();
+      const sevClass = "sev-critical";
+      const ts = ev.display_time_ist || "Live";
+
+      return `
+        <div class="alert-item">
+          <div class="alert-head">
+            <span class="alert-sev ${sevClass}">${sev}</span>
+            <span class="alert-meta">${ts}</span>
+          </div>
+          <div class="alert-title">${ev.message}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderHeap() {
+    const tbody = document.querySelector("#heapTable tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    const filteredHeap = heapData.filter(d =>
+      selectedDevice === "ALL" || (d.device || d.device_id || "UNKNOWN") === selectedDevice
+    );
+    filteredHeap.forEach(row => {
+      const tsEpoch = parseHeapTimestampEpoch(row);
+      const ts = (typeof row.timestamp === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(row.timestamp))
+        ? row.timestamp
+        : (tsEpoch ? formatIstDateTime(tsEpoch * 1000) : "-");
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${ts}</td>
+        <td>${row.process}</td>
+        <td>${row.pid}</td>
+        <td>${row.heap_kb}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function detectLeak() {
+    const latestPerProcess = {};
+
+    // ✅ Step 1: get ONLY latest entry per process (current device)
+    heapData
+      .filter(d =>
+        selectedDevice === "ALL" || (d.device || d.device_id || "UNKNOWN") === selectedDevice
+      )
+      .forEach(d => {
+        if (!latestPerProcess[d.process]) {
+          latestPerProcess[d.process] = d; // first = newest (because unshift)
+        }
+      });
+
+    // ✅ Step 2: compare ONLY latest vs lastSeen
+    Object.values(latestPerProcess).forEach(d => {
+      const proc = d.process;
+      const current = d.heap_kb;
+      const device = d.device || d.device_id || selectedDevice || "UNKNOWN";
+      const key = `${device}:${proc}`;
+      const last = lastSeenHeap[key];
+
+      // first observation
+      if (last === undefined) {
+        lastSeenHeap[key] = current;
+        return;
+      }
+
+      const delta = current - last;
+
+      if (delta > 0) {
+        const tsEpoch = parseHeapTimestampEpoch(d) || Math.floor(Date.now() / 1000);
+
+        pushAlert({
+          severity: "CRITICAL",
+          message: `Heap increased in ${proc} (+${delta} kB)`,
+          is_heap_alert: true,
+          timestamp_epoch: tsEpoch,
+          root_cause: `heap_change_${proc}_${current}`,
+          device
+        });
+      }
+
+      // always update baseline
+      lastSeenHeap[`${device}:${proc}`] = current;
+    });
+  }
+
+  function pushAlert(ev) {
+    const beforeLength = alerts.length;
+
+    const key = [
+      ev.root_cause ?? "",
+      ev.message ?? "",
+      ev.severity ?? ""
+    ].join("|");
+
+    const tsMs = Number.isFinite(Number(ev.timestamp_epoch))
+      ? Number(ev.timestamp_epoch) * 1000
+      : Date.now();
+    ev.display_time_ist = formatIstTime(tsMs);
+
+    const alertObj = {
+      id: key || (Date.now() + Math.random()),
+      ev,
+      expiresAt: Date.now() + 300000
+    };
+
+    alerts = [alertObj, ...alerts]
+      .filter((item, idx, arr) => arr.findIndex(x => x.id === item.id) === idx)
+      .slice(0, 50);
+
+    if (alerts.length !== beforeLength) {
+      renderAlerts();
+      renderHeapAlerts();
+    }
+  }
+
+  function renderTelemetry() {
+    renderSystemAndEnv();
+    renderPorts();
+  }
+
+  function cleanupAlerts() {
+    const now = Date.now();
+
+    alerts = alerts.filter(a => {
+      return a.expiresAt > now;      // keep only non-expired
+    });
+
+    renderAlerts();
+    renderHeapAlerts();
+  }
+
+  function updateML(ml) {
+    // 1. Extract the correct data object
+    const data = (ml.observations && ml.observations.ml_anomaly)
+                 ? ml.observations.ml_anomaly
+                 : (ml.ml_anomaly ? ml.ml_anomaly : ml);
+
+    // 2. Store per-device
+    const device = ml.device || ml.device_id || "UNKNOWN";
+    mlStates[device] = data;
+
+    // 3. Only render if it's the selected device
+    const current = mlStates[selectedDevice] || {};
+    const formatScore = (val) => (typeof val === 'number') ? val.toFixed(3) : "-";
+
+    if (current.warming_up) {
+      const warmupLabel = `warming ${current.samples || 0}/${current.required || 20}`;
+      document.getElementById("ml_score").textContent = warmupLabel;
+      document.getElementById("ml_sys").textContent = warmupLabel;
+      document.getElementById("ml_traf").textContent = warmupLabel;
+      document.getElementById("ml_env").textContent = warmupLabel;
+      document.getElementById("ml_score").style.color = "var(--accent)";
+      return;
+    }
+
+    document.getElementById("ml_score").textContent = formatScore(current.score);
+    document.getElementById("ml_sys").textContent = formatScore(current.sys);
+    document.getElementById("ml_traf").textContent = formatScore(current.traf);
+    document.getElementById("ml_env").textContent = formatScore(current.env);
+
+    // 4. Color the main score based on severity
+    const scoreEl = document.getElementById("ml_score");
+    if (current.score > 0.8) {
+        scoreEl.style.color = "var(--danger)";
+    } else if (current.score > 0.5) {
+        scoreEl.style.color = "var(--accent)";
+    } else {
+        scoreEl.style.color = "var(--ok)";
+    }
+  }
+
+  function extractAlertFromMLPayload(data) {
+    if (!data || typeof data !== "object") return null;
+
+    if (data.type === "alert" && data.data && typeof data.data === "object") {
+      return data.data;
+    }
+
+    if (data.alert && typeof data.alert === "object") {
+      return data.alert;
+    }
+
+    const hasAlertShape =
+      data.severity ||
+      data.root_cause ||
+      data.root_cause_detail ||
+      (Array.isArray(data.recommendations) && data.recommendations.length > 0) ||
+      (data.observations && typeof data.observations === "object");
+
+    if (hasAlertShape) {
+      return data;
+    }
+
+    return null;
+  }
+
+  function startTelemetryStream() {
+    fetch("/stream/telemetry")
+      .then((res) => {
+        if (!res.body) return;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done || !value) return;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            lines.forEach((line) => {
+              const trimmed = line.trim();
+              if (!trimmed) return;
+
+              try {
+                const data = JSON.parse(trimmed);
+                mergeTelemetry(data);
+                telemetryLog = [data, ...telemetryLog].slice(0, telemetryLogLimit);
+                renderTelemetry();
+                renderTelemetryLog();
+              } catch (err) {
+              }
+            });
+
+            read();
+          }).catch(() => {});
+        }
+
+        read();
+      })
+      .catch(() => {});
+  }
+
+  function startMLStream() {
+    fetch("/stream/ml")
+      .then((res) => {
+        if (!res.body) return;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done || !value) return;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            lines.forEach((line) => {
+              const trimmed = line.trim();
+              if (!trimmed) return;
+
+                try {
+                const data = JSON.parse(trimmed);
+                
+                // 1. Handle Alerts
+                //const alertEvent = extractAlertFromMLPayload(data);
+                //if (alertEvent) {
+                  //pushAlert(alertEvent);
+                //}
+
+                // 2. Handle ML Scores
+                // Check if observations.ml_anomaly exists, otherwise use the top level
+                const mlData = (data.observations && data.observations.ml_anomaly) 
+                               ? data.observations.ml_anomaly 
+                               : (data.ml_anomaly ? data.ml_anomaly : data);
+                
+                if (mlData && typeof mlData === "object") {
+                  updateML({
+                    ...mlData,
+                    device: data.device || data.device_id || "UNKNOWN"
+                  });
+                }
+              } catch (err) {
+                console.error("ML Parsing Error:", err);
+              }
+            });
+
+            read();
+          }).catch(() => {});
+        }
+
+        read();
+      })
+      .catch(() => {});
+  }
+
+  function startAlertsStream() {
+    fetch("/stream/alerts")
+      .then((res) => {
+        if (!res.body) return;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done || !value) return;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            lines.forEach((line) => {
+              const trimmed = line.trim();
+              if (!trimmed) return;
+
+              try {
+                const data = JSON.parse(trimmed);
+
+                // ✅ THIS is the ONLY place alerts should come from
+                pushAlert(data);
+
+              } catch (err) {
+                console.error("Alert stream error:", err);
+              }
+            });
+
+            read();
+          }).catch(() => {});
+        }
+
+        read();
+      })
+      .catch(() => {});
+  }
+
+  function startHeapStream() {
+    fetch("/stream/heap")
+      .then((res) => {
+        if (!res.body) return;
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        function read() {
+          reader.read().then(({ done, value }) => {
+            if (done || !value) return;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            lines.forEach((line) => {
+              const trimmed = line.trim();
+              if (!trimmed) return;
+
+              try {
+                const data = JSON.parse(trimmed);
+
+                heapData.unshift(data);
+
+                // group by process
+                const grouped = {};
+
+                heapData.forEach(d => {
+                  if (!grouped[d.process]) grouped[d.process] = [];
+                  grouped[d.process].push(d);
+                });
+
+                // keep last 10 per process
+                const MAX_PER_PROCESS = 50;
+                const TOTAL_LIMIT = 500;
+
+                heapData = Object.values(grouped)
+                  .flatMap(arr => arr.slice(0, MAX_PER_PROCESS))
+                  .slice(0, TOTAL_LIMIT);
+
+                renderHeap();
+
+                // Skip detection during initial load
+                if (!isInitialLoad) {
+                  detectLeak();
+                }
+
+                renderHeapAlerts();
+
+              } catch (err) {
+                console.error("Heap stream error:", err);
+              }
+            });
+
+            read();
+          }).catch(() => {});
+        }
+
+        read();
+      })
+      .catch(() => {});
+  }
+
+  document.querySelectorAll("#tabs_bar .tab").forEach(tab => {
+    tab.addEventListener("click", () => showTab(tab.dataset.target));
+  });
+
+  document.getElementById("deviceSelect").addEventListener("change", (e) => {
+    selectedDevice = e.target.value;
+    renderTelemetry();
+    renderAlerts();
+    renderHeap();
+    renderHeapAlerts();
+    // Re-render ML for newly selected device
+    const current = mlStates[selectedDevice] || {};
+    const formatScore = (val) => (typeof val === 'number') ? val.toFixed(3) : "-";
+    document.getElementById("ml_score").textContent = formatScore(current.score);
+    document.getElementById("ml_sys").textContent = formatScore(current.sys);
+    document.getElementById("ml_traf").textContent = formatScore(current.traf);
+    document.getElementById("ml_env").textContent = formatScore(current.env);
+  });
+
+  renderToggleButtons();
+  renderVisibleBoxes();
+  renderAlerts();
+  renderTelemetryLog();
+  showTab("telemetry");
+  startTelemetryStream();
+  startMLStream();
+  startAlertsStream();
+  startHeapStream();
+  setInterval(cleanupAlerts, 1000);
+  setTimeout(() => {
+    isInitialLoad = false;
+    console.log("Heap alert detection ENABLED (live mode)");
+  }, 5000);
+</script>
+
+</body>
+</html>

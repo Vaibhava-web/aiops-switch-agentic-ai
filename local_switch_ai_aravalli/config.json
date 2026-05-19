@@ -1,0 +1,40 @@
+{
+  "device_id": "ARAVALLI",
+
+  "thresholds": {
+    "cpu": 85,
+    "error_rate": 10
+  },
+  "features": {
+    "ml": true,
+    "traps": true,
+    "prediction": true
+  },
+  "sources": {
+    "snmp_traps": true
+  },
+  "alerting": {
+    "enabled": true,
+    "central_url": "http://10.95.131.72:5000/alert",
+    "local_syslog": true
+  },
+
+  "central": {
+    "log_url": "http://10.95.131.72:5000/ingest_logs",
+    "alert_url": "http://10.95.131.72:5000/alert",
+    "ml_url": "http://10.95.131.72:5000/ml",
+    "ml_timeout_sec": 2
+  },
+
+  "sequence": {
+    "enabled": true,
+    "window_size": 50,
+    "time_window_sec": 10,
+    "prediction_top_k": 3
+  },
+
+  "remediation": {
+    "enabled": true,
+    "mode": "advisory"
+  }
+}

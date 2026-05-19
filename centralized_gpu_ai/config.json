@@ -1,0 +1,6 @@
+{
+  "log_queue_size": 10000,
+  "alert_cooldown": 5,
+  "model_enabled": true,
+  "max_log_memory": 1000
+}

@@ -1,0 +1,59 @@
+{
+  "lightweight": {
+    "metrics": {
+      "system": true,
+      "traffic": false,
+      "environment": false,
+      "heap": false
+    },
+    "intelligence": {
+      "ml": false,
+      "correlation": true
+    },
+    "performance": {
+      "fast_interval": 2,
+      "slow_interval": 10
+    }
+  },
+
+  "balanced": {
+    "metrics": {
+      "system": true,
+      "traffic": true,
+      "environment": false,
+      "heap": false
+    },
+    "intelligence": {
+      "ml": true,
+      "ewma": true,
+      "cusum": true,
+      "correlation": true,
+      "prediction": true,
+      "remediation": false
+    },
+    "performance": {
+      "fast_interval": 1,
+      "slow_interval": 5,
+      "ml_sample_rate": 2,
+      "max_ports_analyzed": 32
+    }
+  },
+
+  "deep_inspection": {
+    "metrics": {
+      "system": true,
+      "traffic": true,
+      "environment": true,
+      "heap": true
+    },
+    "intelligence": {
+      "ml": true,
+      "prediction": true,
+      "remediation": false
+    },
+    "performance": {
+      "fast_interval": 1,
+      "slow_interval": 2
+    }
+  }
+}

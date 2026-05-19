@@ -1,0 +1,41 @@
+{
+  "mode": "balanced",
+
+  "metrics": {
+    "system": true,
+    "traffic": true,
+    "environment": true,
+    "heap": true
+  },
+
+  "sources": {
+    "snmp_traps": false,
+    "syslog": true,
+    "swlog": true
+  },
+
+  "intelligence": {
+    "ml": true,
+    "ewma": true,
+    "cusum": true,
+    "correlation": true,
+    "prediction": true,
+    "remediation": false
+  },
+
+  "performance": {
+    "fast_interval": 1,
+    "slow_interval": 5,
+    "ml_sample_rate": 2,
+    "max_ports_analyzed": 32
+  },
+
+  "central": {
+    "heap_url": "http://10.95.131.72:5000/heap"
+  },
+
+  "heap": {
+    "processes": ["sshd"],
+    "interval_sec": 5
+  }
+}

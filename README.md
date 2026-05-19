@@ -6,6 +6,8 @@ An enterprise-grade, distributed AIOps framework designed for autonomous network
 
 ## 🏗️ System Architecture
 
+![Network Copilot Architecture](assets/architecture.png)
+
 The framework is divided into two decoupled layers to balance low-latency edge edge computation with heavy AI model inference.
 
 ### 1. Edge Agent (Switch-Level)
